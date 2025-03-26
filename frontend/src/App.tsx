@@ -1,6 +1,7 @@
 import { use, useActionState, useRef } from "react";
 import { BookManage, BookManageJson, BookState } from "./domain/book";
 import "./App.css";
+import { handleAddBook } from "./bookActions";
 
 async function fetchManageBook() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -23,30 +24,7 @@ function App() {
         throw new Error("Invalid state");
       }
 
-      const name = formData.get("bookName") as string;
-
-      if (!name) {
-        throw new Error("Book name is required");
-      }
-
-      const response = await fetch("http://localhost:8080/books", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add book");
-      }
-
-      const newBook = await response.json();
-      addFormRef.current?.reset();
-
-      return {
-        allBooks: [...prevState.allBooks, newBook],
-      };
+      return handleAddBook(prevState, formData);
     },
     {
       allBooks: initialBooks,
