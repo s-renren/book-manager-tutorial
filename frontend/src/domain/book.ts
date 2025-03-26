@@ -13,3 +13,7 @@ export type BookManageJson = {
   name: string;
   status: string;
 };
+
+export type BookState = {
+  allBooks: BookManage[];
+};
