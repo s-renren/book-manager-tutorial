@@ -1,7 +1,7 @@
 import { use, useActionState, useRef } from "react";
 import { BookManage, BookManageJson, BookState } from "./domain/book";
 import "./App.css";
-import { handleAddBook } from "./bookActions";
+import { handleAddBook, handleSearchBooks } from "./bookActions";
 
 async function fetchManageBook() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -15,6 +15,7 @@ const fetchManageBookPromise = fetchManageBook();
 function App() {
   const initialBooks = use(fetchManageBookPromise);
   const addFormRef = useRef<HTMLFormElement>(null);
+  const searchFormRef = useRef<HTMLFormElement>(null);
   const [bookState, updataBookState, isPending] = useActionState(
     async (
       prevState: BookState | undefined,
@@ -23,26 +24,49 @@ function App() {
       if (!prevState) {
         throw new Error("Invalid state");
       }
+      const action = formData.get("formType") as string;
 
-      return handleAddBook(prevState, formData);
+      const actionHandlers = {
+        add: () => handleAddBook(prevState, formData),
+        search: () => handleSearchBooks(prevState, formData),
+      } as const;
+
+      if (action !== "add" && action !== "search") {
+        throw new Error(`Invalid action: ${action}`);
+      }
+
+      return actionHandlers[action]();
     },
     {
       allBooks: initialBooks,
+      filteredBooks: null,
+      keyword: "",
     }
   );
+
+  const books = bookState.filteredBooks || bookState.allBooks;
 
   return (
     <>
       <div>
         <form action={updataBookState} ref={addFormRef}>
+          <input type="hidden" name="formType" value="add" />
           <input type="text" name="bookName" placeholder="書籍名" />
           <button type="submit" disabled={isPending}>
             追加
           </button>
         </form>
+        <form ref={searchFormRef} action={updataBookState}>
+          <input type="hidden" name="formType" value="search" />
+          <input type="text" name="keyword" placeholder="書籍名で検索" />
+          <button type="submit" disabled={isPending}>
+            検索
+          </button>
+        </form>
+
         <div>
           <ul>
-            {bookState.allBooks.map((book: BookManage) => {
+            {books?.map((book: BookManage) => {
               return <li key={book.id}>{book.name}</li>;
             })}
           </ul>
