@@ -1,7 +1,11 @@
 import { use, useActionState, useRef } from "react";
 import { BookManage, BookManageJson, BookState } from "./domain/book";
 import "./App.css";
-import { handleAddBook, handleSearchBooks } from "./bookActions";
+import {
+  handleAddBook,
+  handleSearchBooks,
+  handleUpdateBook,
+} from "./bookActions";
 
 async function fetchManageBook() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -16,7 +20,7 @@ function App() {
   const initialBooks = use(fetchManageBookPromise);
   const addFormRef = useRef<HTMLFormElement>(null);
   const searchFormRef = useRef<HTMLFormElement>(null);
-  const [bookState, updataBookState, isPending] = useActionState(
+  const [bookState, updateBookState, isPending] = useActionState(
     async (
       prevState: BookState | undefined,
       formData: FormData
@@ -29,9 +33,11 @@ function App() {
       const actionHandlers = {
         add: () => handleAddBook(prevState, formData),
         search: () => handleSearchBooks(prevState, formData),
+        update: () => handleUpdateBook(prevState, formData),
       } as const;
 
-      if (action !== "add" && action !== "search") {
+      if (action !== "add" && action !== "search" && action !== "update") {
+        console.log(action);
         throw new Error(`Invalid action: ${action}`);
       }
 
@@ -49,14 +55,14 @@ function App() {
   return (
     <>
       <div>
-        <form action={updataBookState} ref={addFormRef}>
+        <form action={updateBookState} ref={addFormRef}>
           <input type="hidden" name="formType" value="add" />
           <input type="text" name="bookName" placeholder="書籍名" />
           <button type="submit" disabled={isPending}>
             追加
           </button>
         </form>
-        <form ref={searchFormRef} action={updataBookState}>
+        <form ref={searchFormRef} action={updateBookState}>
           <input type="hidden" name="formType" value="search" />
           <input type="text" name="keyword" placeholder="書籍名で検索" />
           <button type="submit" disabled={isPending}>
@@ -67,7 +73,28 @@ function App() {
         <div>
           <ul>
             {books?.map((book: BookManage) => {
-              return <li key={book.id}>{book.name}</li>;
+              const bookStatus = book.status;
+              return (
+                <li key={book.id}>
+                  {book.name}
+                  <form action={updateBookState}>
+                    <input type="hidden" name="formType" value="update" />
+                    <input type="hidden" name="id" value={book.id} />
+                    <select
+                      key={`select-${book.id}-${bookStatus}`}
+                      name="status"
+                      defaultValue={bookStatus}
+                      onChange={(e) => {
+                        e.target.form?.requestSubmit();
+                      }}
+                    >
+                      <option value="在庫あり">在庫あり</option>
+                      <option value="貸出中">貸出中</option>
+                      <option value="返却済">返却済</option>
+                    </select>
+                  </form>
+                </li>
+              );
             })}
           </ul>
         </div>
